@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<script src="http://localhost:80/socket.io/socket.io.js"></script>
+<script src="/lib/jquery-2.1.0.js"></script>
+
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+        <button id="login" >Login</button>     
+        <button id="register" >Register</button>    
+        <button id="test" >test</button>   
+    </body>
+</html>
+
+<script>
+    var socket;
+    var token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiSm9lIiwiZW1haWwiOiJqb2VtaWxzb21AZ21haWwuY29tIiwiaWQiOjIwMTQsImV4cCI6MTM5NjQ5NTc1MywiaWF0IjoxMzk2NDk1MTUzfQ.vRf9oNaH3P56VRr9F0OOwl8LZnijnFrA0pfsbN8kr9w";
+    window.onload = function () {
+
+        var loginButton = document.getElementById("login");
+        var registerButton = document.getElementById("register");
+        var testButton = document.getElementById("test");
+
+        loginButton.onclick = function () {
+            console.log("login");
+            //socket.emit('login', { message: 'boom' });
+
+            $.ajax("http://localhost:80/login", {
+                 data:{ 
+                 email: "joseph@cogodigital.co.nz",
+                 password: "password" 
+                },
+                type : 'post',
+                statusCode: {
+                   400: function (response) {
+                      alert(response);     
+                   },
+                   200 : function (data){
+                    console.log("request complete");
+                    console.log(data.token);
+                    token = data.token;
+                    connectSocket();
+                   } 
+                }, success: function () {
+
+                }
+            });
+
+        };
+
+        registerButton.onclick = function () {
+            console.log("register");
+
+            $.post("http://localhost:80/register", { email: "email", password: "password" }, function (data) {
+
+            }).fail(function () {
+                alert("error");
+            });
+        };
+
+        testButton.onclick = function () {
+            connectSocket();
+        };
+
+    }
+
+    function connectSocket() {
+        console.log(socket);
+
+        socket = io.connect('http://localhost:80', {
+            query: 'token=' + token
+        });
+
+        socket.on('disconnect', function () {
+            socket.disconnect();
+            //THIS IS NEEDED TO FIX AN ANNOYING BUG, hopefully will be fixed in v1.0
+            io.j = [];
+            io.sockets = [];
+            console.log('disconnected');
+        });
+
+        socket.on('error', function () {
+            console.log("Connection failed");
+            //THIS IS NEEDED TO FIX AN ANNOYING BUG, hopefully will be fixed in v1.0
+            io.j = [];
+            io.sockets = [];
+        });
+
+
+
+        socket.on('message', function (data) {
+            console.log(data.message);
+        })
+
+    }
+
+</script>
