@@ -11,40 +11,48 @@
     </head>
     <body>
         <button id="login" >Login</button>     
-        <button id="register" >Register</button>    
+        <button id="register" >Register</button>   
+        <button id="refresh">Refresh Token</button>  
         <button id="test" >test</button>   
+        <input id="email" type="text"> </input>
+        <button id="askquestion">ASK Q </button>
     </body>
 </html>
 
 <script>
     var socket;
-    var token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiSm9lIiwiZW1haWwiOiJqb2VtaWxzb21AZ21haWwuY29tIiwiaWQiOjIwMTQsImV4cCI6MTM5NjQ5NTc1MywiaWF0IjoxMzk2NDk1MTUzfQ.vRf9oNaH3P56VRr9F0OOwl8LZnijnFrA0pfsbN8kr9w";
+    var token;
     window.onload = function () {
 
         var loginButton = document.getElementById("login");
         var registerButton = document.getElementById("register");
         var testButton = document.getElementById("test");
+        var refreshButton = document.getElementById("refresh");
+        var textInput = document.getElementById("email");
+        var questionButton = document.getElementById("askquestion");
 
         loginButton.onclick = function () {
             console.log("login");
             //socket.emit('login', { message: 'boom' });
+            console.log(textInput.value);
 
             $.ajax("http://localhost:80/login", {
-                 data:{ 
-                 email: "joseph@cogodigital.co.nz",
-                 password: "password" 
+                data: {
+                    email: textInput.value,
+                    password: "password"
                 },
-                type : 'post',
+                type: 'post',
                 statusCode: {
-                   400: function (response) {
-                      alert(response);     
-                   },
-                   200 : function (data){
-                    console.log("request complete");
-                    console.log(data.token);
-                    token = data.token;
-                    connectSocket();
-                   } 
+                    400: function (response) {
+                        alert(response);
+                    },
+                    200: function (data) {
+                        console.log("request complete");
+                        console.log(data.token);
+                        token = data.token;
+                        localStorage.token = token;
+                        connectSocket();
+                    }
                 }, success: function () {
 
                 }
@@ -62,9 +70,43 @@
             });
         };
 
+        refreshButton.onclick = function () {
+            console.log("Refresh");
+
+            $.ajax("http://localhost:80/refreshtoken", {
+                data: {
+                    token: token
+                },
+                type: 'post',
+                statusCode: {
+                    400: function (response) {
+                        alert(response);
+                    },
+                    401: function (response) {
+                        alert(response);
+                    },
+                    200: function (data) {
+                        console.log("refresh complete");
+                        console.log(data.token);
+                        token = data.token;
+                        localStorage.token = token;
+                        connectSocket();
+                    }
+                }, success: function () {
+
+                }
+            });
+        },
+
         testButton.onclick = function () {
             connectSocket();
         };
+
+
+        questionButton.onclick = function () {
+            socket.emit('askquestion', { question: 'Test Question', skills: ['node.js'] });
+
+        }
 
     }
 
@@ -90,7 +132,10 @@
             io.sockets = [];
         });
 
-
+        socket.on('received', function (data) {
+            console.log('received');
+            console.log(data.question);
+        })
 
         socket.on('message', function (data) {
             console.log(data.message);
